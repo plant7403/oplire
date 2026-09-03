@@ -277,11 +277,21 @@ pub fn stop_open_blocks(tracker: &mut StreamTracker) -> Vec<String> {
 /// Pure turn extraction: from a `GET /session/{id}/message` array, take the
 /// messages newer than `baseline` (info ids seen before `prompt_async`),
 /// find our user message (first new user message; fallback: last user
-/// message in the whole list), and concatenate the assistant messages after
-/// it in list order.
+/// message in the whole list), and concatenate the NEW assistant messages
+/// after it in list order.
+///
+/// Only assistant messages newer than `baseline` are collected: on a reused
+/// session the fallback anchor is the prior turn's user message, and without
+/// this filter the first poll — which typically runs before `prompt_async`'s
+/// user message lands (the 204 is non-blocking) — would snapshot the prior
+/// turn's completed reply, report terminal immediately, and emit stale text
+/// with the prior turn's usage. New-message filtering turns such premature
+/// polls into empty/non-terminal so polling continues until our turn lands.
+/// The fallback is kept for the server quirk where a reply lands without a
+/// new user message: it then collects only the genuinely new reply.
 ///
 /// Returns `(turn_parts, last_assistant_info, terminal)` where terminal is
-/// true once the last turn assistant message carries a non-null `finish`.
+/// true once the last NEW turn assistant message carries a non-null `finish`.
 pub fn collect_turn_parts(
     messages: &Value,
     baseline: &HashSet<String>,
@@ -320,6 +330,12 @@ pub fn collect_turn_parts(
     let mut parts = Vec::new();
     let mut last_info: Option<Value> = None;
     for m in arr.iter().skip(user_idx + 1) {
+        // Stale-history guard: only this turn's messages (newer than the
+        // pre-prompt_async baseline) may contribute parts, usage, or
+        // terminality. See doc comment above.
+        if !is_new(m) {
+            continue;
+        }
         let info = match m.get("info") {
             Some(n) => n,
             None => continue,
