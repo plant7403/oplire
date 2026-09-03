@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use colored::Colorize;
-use oplire_reset::{ProxyConfig, AppConfig};
+use oplire_reset::{ProxyConfig, AppConfig, Backend};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -47,6 +47,8 @@ enum Commands {
         max_retries: u32,
         #[arg(long, default_value = "5000")]
         warp_delay: u64,
+        #[arg(long, value_enum, default_value = "native")]
+        backend: Backend,
     },
     Connect {
         #[command(subcommand)]
@@ -71,6 +73,8 @@ enum Commands {
         max_retries: u32,
         #[arg(long, default_value = "5000")]
         warp_delay: u64,
+        #[arg(long, value_enum, default_value = "native")]
+        backend: Backend,
     },
     Config {
         #[command(subcommand)]
@@ -790,6 +794,7 @@ fn main() {
                 opencode_api_key: api_key.clone(),
                 max_retries: *max_retries,
                 warp_reset_delay_ms: *warp_delay,
+                backend: Backend::default(),
             };
 
             println!("{} Proxy:      {}", "→".green(), listen.bold());
@@ -888,6 +893,7 @@ fn main() {
             api_key,
             max_retries,
             warp_delay,
+            backend,
         } => {
             print_banner();
             println!("{}", "Daemon Mode".bold().magenta());
@@ -906,6 +912,7 @@ fn main() {
                 opencode_api_key: api_key.clone(),
                 max_retries: *max_retries,
                 warp_reset_delay_ms: *warp_delay,
+                backend: *backend,
             };
 
             let rt = tokio::runtime::Runtime::new().unwrap();
@@ -1081,6 +1088,7 @@ fn main() {
             api_key,
             max_retries,
             warp_delay,
+            backend,
         } => {
             let config = ProxyConfig {
                 listen_addr: listen.clone(),
@@ -1088,6 +1096,7 @@ fn main() {
                 opencode_api_key: api_key.clone(),
                 max_retries: *max_retries,
                 warp_reset_delay_ms: *warp_delay,
+                backend: *backend,
             };
 
             print_banner();

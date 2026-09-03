@@ -3,6 +3,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -25,6 +26,10 @@ async fn log_requests(
 }
 
 pub async fn start_proxy_server(config: ProxyConfig) -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .try_init();
+
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(120))
         .build()?;
@@ -36,6 +41,7 @@ pub async fn start_proxy_server(config: ProxyConfig) -> anyhow::Result<()> {
         config: config.clone(),
         client,
         warp_resolver,
+        session_cache: Arc::new(Mutex::new(HashMap::new())),
     }));
 
     let app = Router::new()

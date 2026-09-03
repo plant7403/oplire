@@ -1,3 +1,14 @@
+/// Backend used by the proxy bridge (stored/plumbed only; not branched on yet).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize, clap::ValueEnum)]
+#[serde(rename_all = "lowercase")]
+pub enum Backend {
+    /// Native opencode prompt/session API (default).
+    #[default]
+    Native,
+    /// Legacy OpenAI-compatible chat completions path.
+    Openai,
+}
+
 /// Proxy configuration for the Anthropic ↔ OpenCode Zen bridge.
 #[derive(Debug, Clone)]
 pub struct ProxyConfig {
@@ -11,6 +22,8 @@ pub struct ProxyConfig {
     pub max_retries: u32,
     /// Delay between WARP reset steps (milliseconds)
     pub warp_reset_delay_ms: u64,
+    /// Backend used by the proxy bridge (default: native)
+    pub backend: Backend,
 }
 
 /// A free model available on OpenCode Zen.
@@ -30,6 +43,7 @@ impl Default for ProxyConfig {
             opencode_api_key: None,
             max_retries: 3,
             warp_reset_delay_ms: 5000,
+            backend: Backend::default(),
         }
     }
 }
@@ -39,24 +53,32 @@ impl ProxyConfig {
     pub fn free_models() -> Vec<FreeModel> {
         vec![
             FreeModel {
-                id: "glm-4.7-free".to_string(),
-                display_name: "GLM 4.7 Free".to_string(),
+                id: "big-pickle".to_string(),
+                display_name: "Big Pickle".to_string(),
             },
             FreeModel {
-                id: "minimax-m2.1-free".to_string(),
-                display_name: "MiniMax M2.1 Free".to_string(),
+                id: "ling-3.0-flash-fin-free".to_string(),
+                display_name: "Ling 3.0 Flash Fin Free".to_string(),
             },
             FreeModel {
-                id: "kimi-k2.5-free".to_string(),
-                display_name: "Kimi K2.5 Free".to_string(),
+                id: "mimo-v2.5-free".to_string(),
+                display_name: "Mimo V2.5 Free".to_string(),
             },
             FreeModel {
-                id: "qwen-2.5-72b-free".to_string(),
-                display_name: "Qwen 2.5 72B Free".to_string(),
+                id: "muse-spark-1.2-contributor-free".to_string(),
+                display_name: "Muse Spark 1.2 Contributor Free".to_string(),
             },
             FreeModel {
-                id: "llama-3.3-70b-free".to_string(),
-                display_name: "Llama 3.3 70B Free".to_string(),
+                id: "muse-spark-1.3-contributor-free".to_string(),
+                display_name: "Muse Spark 1.3 Contributor Free".to_string(),
+            },
+            FreeModel {
+                id: "nemotron-3-ultra-free".to_string(),
+                display_name: "Nemotron 3 Ultra Free".to_string(),
+            },
+            FreeModel {
+                id: "nemotron-3.5-lightning-free".to_string(),
+                display_name: "Nemotron 3.5 Lightning Free".to_string(),
             },
         ]
     }
@@ -88,6 +110,8 @@ pub struct AppConfig {
     pub upstream: String,
     pub max_retries: u32,
     pub warp_delay: u64,
+    #[serde(default)]
+    pub backend: Backend,
 }
 
 impl Default for AppConfig {
@@ -97,6 +121,7 @@ impl Default for AppConfig {
             upstream: "http://localhost:3000".to_string(),
             max_retries: 3,
             warp_delay: 5000,
+            backend: Backend::default(),
         }
     }
 }
