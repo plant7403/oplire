@@ -80,7 +80,7 @@ pub async fn handle_models(State(state): State<Arc<Mutex<ProxyState>>>) -> impl 
                     (StatusCode::OK, Json(transformed))
                 }
                 Err(e) => {
-                    error!("Failed to parse models response: {}", e);
+                    warn!("Failed to parse models response: {}", e);
                     (StatusCode::OK, Json(ProxyConfig::models_response()))
                 }
             }
